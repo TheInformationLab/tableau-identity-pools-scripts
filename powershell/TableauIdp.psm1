@@ -659,6 +659,71 @@ function Remove-IdpIdentityPool {
     if (-not $Session.DryRun) { Write-IdpLog -Message "Identity pool $PoolUuid deleted" }
 }
 
+function Find-IdpField {
+    # Return a field from a response or from one level of nesting (e.g. {"pool": {...}}), else $null.
+    param($Response, [string]$Key)
+    $v = Get-IdpProperty $Response $Key
+    if ($null -ne $v) { return $v }
+    if ($Response -is [pscustomobject]) {
+        foreach ($prop in $Response.PSObject.Properties) {
+            if ($prop.Value -is [pscustomobject]) {
+                $nested = Get-IdpProperty $prop.Value $Key
+                if ($null -ne $nested) { return $nested }
+            }
+        }
+    }
+    return $null
+}
+
+function Get-IdpPoolEnabled {
+    <# Return the pool's is_enabled flag, or $null in dry-run mode / if it can't be read. #>
+    param([Parameter(Mandatory)]$Session, [Parameter(Mandatory)][string]$PoolUuid)
+    $pool = Get-IdpIdentityPool -Session $Session -PoolUuid $PoolUuid
+    $value = Find-IdpField $pool 'is_enabled'
+    if ($value -is [bool]) { return $value }
+    return $null
+}
+
+function Set-IdpPoolEnabled {
+    <# Enable or disable an identity pool and verify the change. Returns $true on success.
+       The update is a full replace: the body must carry the pool's uuid, name and description as
+       well as is_enabled (a body with only uuid + is_enabled is rejected with 400 "Bad Request").
+       The current name and description are read from the pool so nothing but is_enabled changes.
+       The result is checked by re-reading the pool. #>
+    param(
+        [Parameter(Mandatory)]$Session,
+        [Parameter(Mandatory)][string]$PoolUuid,
+        [Parameter(Mandatory)][bool]$Enabled
+    )
+    $current = Get-IdpIdentityPool -Session $Session -PoolUuid $PoolUuid
+    $pool = $current
+    $wrapped = Get-IdpProperty $current 'pool'
+    if ($wrapped -is [pscustomobject]) { $pool = $wrapped }
+
+    $poolName = Get-IdpProperty $pool 'identity_pool_name'
+    if (-not $poolName) { $poolName = Get-IdpProperty $pool 'name' }
+    if (-not $poolName -and -not $Session.DryRun) {
+        Write-IdpLog -Level ERROR -Message "Could not read the pool's current name - cannot build the update body"
+        return $false
+    }
+    $description = Get-IdpProperty $pool 'description'
+    if ($null -eq $description) { $description = '' }
+    $body = @{ uuid = $PoolUuid; name = $poolName; description = $description; is_enabled = $Enabled }
+
+    Write-IdpLog -Message "Setting identity pool $PoolUuid is_enabled=$Enabled"
+    try {
+        Update-IdpIdentityPool -Session $Session -PoolUuid $PoolUuid -Updates $body | Out-Null
+    }
+    catch {
+        Write-IdpLog -Level ERROR -Message "Update was rejected: $_"
+        return $false
+    }
+    if ($Session.DryRun) { return $true }
+    if ((Get-IdpPoolEnabled -Session $Session -PoolUuid $PoolUuid) -eq $Enabled) { return $true }
+    Write-IdpLog -Level ERROR -Message 'Update was accepted but is_enabled did not change'
+    return $false
+}
+
 # ── Rollback state (port of state.py) ─────────────────────────────────────────
 
 function Read-IdpState {
@@ -749,5 +814,6 @@ Export-ModuleMember -Function `
     New-IdpIdentityStore, Get-IdpIdentityStores, Test-IdpIdentityStoreExists, Remove-IdpIdentityStore, `
     New-IdpAuthConfig, Get-IdpAuthConfigs, Test-IdpAuthConfigExists, Update-IdpAuthConfig, Remove-IdpAuthConfig, `
     New-IdpIdentityPool, Get-IdpIdentityPool, Get-IdpIdentityPools, Test-IdpIdentityPoolExists, Update-IdpIdentityPool, Remove-IdpIdentityPool, `
+    Get-IdpPoolEnabled, Set-IdpPoolEnabled, `
     Read-IdpState, Write-IdpState, Get-IdpConfigFingerprint, Remove-IdpStateFile, `
     Add-IdpUserToPool, Remove-IdpUserFromPool

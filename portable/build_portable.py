@@ -9,6 +9,7 @@ machine and run with no Python install, no admin rights and no PowerShell script
       setup_identity_pool.bat     launchers (plain batch files - not subject to
       list_resources.bat          PowerShell execution policy)
       teardown_identity_pool.bat
+      set_identity_pool_state.bat
       runtime/                    official python.org "embeddable" Python (Windows x64)
       site-packages/              dependencies from python/requirements.txt (wheels)
       app/                        setup_identity_pool.py, list_resources.py, tableau_idp/ ...
@@ -59,6 +60,10 @@ No Python install, admin rights or PowerShell scripts needed.
 
 If setup fails part-way, fix the cause and continue where it stopped:
        setup_identity_pool.bat --config config.yml --resume
+
+To enable/disable the pool (no switch = show current state):
+       set_identity_pool_state.bat --config config.yml --enable
+       set_identity_pool_state.bat --config config.yml --disable
 
 To roll back what setup created (reads created_resources.json, asks for confirmation):
        teardown_identity_pool.bat --config config.yml --dry-run
@@ -143,7 +148,7 @@ def main() -> None:
     shutil.copy(REPO / "config.example.yml", bundle / "config.example.yml")
 
     # 4. Launchers and readme (CRLF for Windows)
-    for script in ("setup_identity_pool", "list_resources", "teardown_identity_pool"):
+    for script in ("setup_identity_pool", "list_resources", "teardown_identity_pool", "set_identity_pool_state"):
         (bundle / f"{script}.bat").write_bytes(LAUNCHER.format(script=f"{script}.py").replace("\n", "\r\n").encode("ascii"))
     (bundle / "README.txt").write_bytes(BUNDLE_README.format(python=args.python_version).replace("\n", "\r\n").encode("ascii"))
 

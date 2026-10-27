@@ -2,7 +2,9 @@
 
 import logging
 
-from tableau_idp._response import extract_id, extract_list
+import requests
+
+from tableau_idp._response import extract_id, extract_list, find_field
 from tableau_idp.client import TableauSession
 
 logger = logging.getLogger(__name__)
@@ -99,6 +101,47 @@ def update_identity_pool(
     if not session.dry_run:
         logger.info("Identity pool %s updated", pool_uuid)
     return result
+
+
+def get_pool_enabled(session: TableauSession, pool_uuid: str) -> bool | None:
+    """Return the pool's is_enabled flag, or None in dry-run mode / if it can't be read."""
+    pool = get_identity_pool(session, pool_uuid)
+    value = find_field(pool, "is_enabled")
+    return value if isinstance(value, bool) else None
+
+
+def set_pool_enabled(session: TableauSession, pool_uuid: str, enabled: bool) -> bool:
+    """Enable or disable an identity pool and verify the change. Returns True on success.
+
+    The update is a full replace: the body must carry the pool's uuid, name and description as well
+    as is_enabled (a body with only uuid + is_enabled is rejected with 400 "Bad Request"). The current
+    name and description are read from the pool so nothing but is_enabled changes. The result is
+    checked by re-reading the pool.
+    """
+    current = get_identity_pool(session, pool_uuid)
+    pool = (current or {}).get("pool", current) if isinstance(current, dict) else {}
+    name = pool.get("identity_pool_name") or pool.get("name")
+    if not name and not session.dry_run:
+        logger.error("Could not read the pool's current name - cannot build the update body")
+        return False
+    body = {
+        "uuid": pool_uuid,
+        "name": name,
+        "description": pool.get("description", ""),
+        "is_enabled": enabled,
+    }
+    logger.info("Setting identity pool %s is_enabled=%s", pool_uuid, enabled)
+    try:
+        update_identity_pool(session, pool_uuid, body)
+    except requests.HTTPError as exc:
+        logger.error("Update was rejected: %s", exc)
+        return False
+    if session.dry_run:
+        return True
+    if get_pool_enabled(session, pool_uuid) is enabled:
+        return True
+    logger.error("Update was accepted but is_enabled did not change")
+    return False
 
 
 def delete_identity_pool(session: TableauSession, pool_uuid: str) -> None:

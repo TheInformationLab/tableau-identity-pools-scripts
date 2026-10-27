@@ -8,6 +8,7 @@ Works on the Windows PowerShell 5.1 that ships with Windows, and on PowerShell 7
 | `setup_identity_pool.py`        | `setup_identity_pool.ps1`           |
 | `list_resources.py`             | `list_resources.ps1`                |
 | `teardown_identity_pool.py`     | `teardown_identity_pool.ps1`        |
+| `set_identity_pool_state.py`    | `set_identity_pool_state.ps1`       |
 | `tableau_idp/` package          | `TableauIdp.psm1` module            |
 
 The TSM script is shared and lives in `scripts/` (`.bat`, `.sh` and `.ps1` variants).
@@ -27,6 +28,10 @@ $env:TABLEAU_OIDC_CLIENT_SECRET = '<OIDC client secret>'
 .\powershell\setup_identity_pool.ps1 -Config config.yml
 .\powershell\setup_identity_pool.ps1 -Config config.yml -Resume   # continue a run that failed part-way
 .\powershell\list_resources.ps1 -Config config.yml
+
+# Switch the pool on/off (create it with is_enabled: false first); no switch = show current state
+.\powershell\set_identity_pool_state.ps1 -Config config.yml -Enable
+.\powershell\set_identity_pool_state.ps1 -Config config.yml -Disable
 
 # Roll back what setup created (reads created_resources.json, asks for confirmation)
 .\powershell\teardown_identity_pool.ps1 -Config config.yml -DryRun

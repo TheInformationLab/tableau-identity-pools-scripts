@@ -103,9 +103,10 @@ class TableauSession:
             logger.info("[DRY RUN] PUT %s", url)
             logger.debug("[DRY RUN] Body: %s", body)
             return None
+        logger.debug("PUT %s body: %s", url, _redact(body))
         resp = requests.put(url, json=body, headers=self._headers(), timeout=30)
-        logger.debug("PUT %s -> %d", url, resp.status_code)
-        resp.raise_for_status()
+        logger.debug("PUT %s -> %d %s", url, resp.status_code, resp.text[:500])
+        _raise_for_status(resp)
         return resp.json() if resp.text else {}
 
     def delete(self, url: str) -> None:

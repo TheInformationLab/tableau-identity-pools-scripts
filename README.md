@@ -24,6 +24,24 @@ template-functions/  reference snippets
 5. Configure the printed redirect URI in your IdP.
 6. To undo a run, use `teardown_identity_pool` (see *Rolling back* below).
 
+## Enabling and disabling the pool
+
+Create the pool disabled (`is_enabled: false` in `config.yml`) so it doesn't appear on the sign-in
+page while you register the redirect URI in your IdP, then switch it on - and straight back off if
+anything looks wrong:
+
+```
+python python/set_identity_pool_state.py --config config.yml             # show current state
+python python/set_identity_pool_state.py --config config.yml --enable
+python python/set_identity_pool_state.py --config config.yml --disable
+.\powershell\set_identity_pool_state.ps1 -Config config.yml -Enable      # PowerShell equivalent
+```
+
+The pool UUID is read from `created_resources.json` (or pass `--pool-uuid` / `-PoolUuid`). Tableau's
+update is a full replace, so the script sends `{uuid, name, description, is_enabled}` - the pool's
+current name and description with the new `is_enabled` - and verifies the change by re-reading the
+pool. If the pool is already in the requested state, nothing is sent.
+
 ## Rolling back
 
 `setup_identity_pool` records each ID it creates in `created_resources.json` as it goes (so even a

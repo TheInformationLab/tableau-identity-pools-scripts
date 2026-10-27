@@ -192,6 +192,9 @@ try {
     Write-IdpLog -Name $name -Message "Identity pool UUID : $poolUuid"
     Write-IdpLog -Name $name -Message "IdP redirect URI   : $redirectUri"
     Write-IdpLog -Name $name -Message 'Configure the redirect URI above in your IdP application.'
+    if (-not $DryRun -and -not [bool](Get-IdpConfigValue $cfg 'identity_pool' 'is_enabled' $true)) {
+        Write-IdpLog -Name $name -Message 'The pool is DISABLED. Once the IdP is configured, enable it with: .\powershell\set_identity_pool_state.ps1 -Config <config> -Enable'
+    }
     if (-not $DryRun) { Write-IdpLog -Name $name -Message "To roll back: .\powershell\teardown_identity_pool.ps1 (uses $StateFile)" }
     Write-IdpLog -Name $name -Message ('=' * 60)
 }

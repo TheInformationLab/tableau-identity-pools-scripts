@@ -235,6 +235,11 @@ def main() -> None:
         logger.info("Identity pool UUID : %s", pool_uuid)
         logger.info("IdP redirect URI   : %s", redirect_uri)
         logger.info("Configure the redirect URI above in your IdP application.")
+        if not args.dry_run and not pool_cfg.get("is_enabled", True):
+            logger.info(
+                "The pool is DISABLED. Once the IdP is configured, enable it with: "
+                "python python/set_identity_pool_state.py --config <config> --enable"
+            )
         if not args.dry_run:
             logger.info("To roll back: python python/teardown_identity_pool.py (uses %s)", args.state_file)
         logger.info("=" * 60)

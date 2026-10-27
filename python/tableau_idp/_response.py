@@ -59,6 +59,17 @@ def extract_id(
     )
 
 
+def find_field(response, key: str):
+    """Return `key` from a response or from one level of nesting (e.g. {"pool": {...}}), else None."""
+    if isinstance(response, dict):
+        if key in response:
+            return response[key]
+        for value in response.values():
+            if isinstance(value, dict) and key in value:
+                return value[key]
+    return None
+
+
 def extract_list(
     response: dict | list,
     list_keys: tuple[str, ...],

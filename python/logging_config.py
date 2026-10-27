@@ -26,6 +26,10 @@ def setup_logging(script_name: str, log_dir: str = "logs") -> logging.Logger:
     file_handler = logging.FileHandler(log_path, encoding="utf-8")
     file_handler.setFormatter(formatter)
 
+    # Redirected output on Windows uses a legacy codepage (e.g. cp1252) that can't encode the
+    # box-drawing characters in our log lines; substitute rather than emit a traceback per line.
+    if hasattr(sys.stdout, "reconfigure"):
+        sys.stdout.reconfigure(errors="replace")
     console_handler = logging.StreamHandler(sys.stdout)
     console_handler.setFormatter(formatter)
 
