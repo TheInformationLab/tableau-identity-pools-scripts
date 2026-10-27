@@ -1,0 +1,28 @@
+server:
+  url: "https://myserver.example.com/"  # trailing slash required
+  site_uri: ""                          # empty string for the default site
+
+identity_store:
+  name: "my-identity-store"            # must be unique on the server
+  display_name: "My Identity Store"    # optional human-readable label
+
+auth_config:
+  auth_type: "OIDC"
+  client_id: "my-oidc-client-id"       # from your IdP application registration
+  config_url: "https://my-idp.example.com/.well-known/openid-configuration"
+  id_claim: "sub"                       # IdP claim used as the unique user identifier
+  username_claim: "email"              # IdP claim mapped to the Tableau username
+  client_authentication: "CLIENT_SECRET_BASIC"
+  iframed_idp_enabled: false
+
+identity_pool:
+  name: "My Identity Pool"             # visible to users on the sign-in page
+  description: ""                      # optional, visible to users
+  is_enabled: true
+
+# Secrets are read from environment variables — never put them in this file.
+# Set them directly or create a .env file in this directory:
+#
+#   TABLEAU_TOKEN_NAME        personal access token name
+#   TABLEAU_TOKEN_SECRET      personal access token secret
+#   TABLEAU_OIDC_CLIENT_SECRET  OIDC client secret from your IdP application

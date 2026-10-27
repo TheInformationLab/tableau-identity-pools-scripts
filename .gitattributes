@@ -1,0 +1,9 @@
+# Keep line endings correct regardless of each contributor's core.autocrlf
+*.sh   text eol=lf
+*.bat  text eol=crlf
+*.py   text eol=lf
+*.yml  text eol=lf
+*.md   text eol=lf
+# PowerShell files carry a UTF-8 BOM (needed for Windows PowerShell 5.1); leave CRLF/LF as authored
+*.ps1  text
+*.psm1 text

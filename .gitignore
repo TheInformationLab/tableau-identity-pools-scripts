@@ -1,0 +1,13 @@
+config.yml
+.env
+logs/
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+dist/
+created_resources.json
+.claude/
+*.log
+.DS_Store
